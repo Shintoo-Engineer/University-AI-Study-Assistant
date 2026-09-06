@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.rag.vector_store import search_chunks
-from app.rag.generator import generate_answer
+from app.rag.pipeline import ask_question
 
 
 app = FastAPI(
@@ -14,9 +13,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3001"
-    ],
+    allow_origins=["http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,29 +32,11 @@ def root():
 
 
 @app.post("/ask")
-def ask_question(request: QuestionRequest):
+def ask(request: QuestionRequest):
+    result = ask_question(request.question)
 
-    # Step 1: Retrieve relevant university notes
-    results = search_chunks(
-        request.question,
-        limit=3
-    )
-
-    # Step 2: Combine retrieved chunks
-    context = "\n\n".join(
-        result["text"]
-        for result in results
-    )
-
-    # Step 3: Generate answer using local LLM
-    answer = generate_answer(
-        request.question,
-        context
-    )
-
-    # Step 4: Return answer + sources
     return {
         "question": request.question,
-        "answer": answer,
-        "sources": results
+        "answer": result["answer"],
+        "sources": result["sources"]
     }
