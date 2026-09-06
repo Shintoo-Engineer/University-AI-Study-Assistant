@@ -104,11 +104,14 @@ def add_chunks(chunks: list[dict]):
 
 def search_chunks(
     query: str,
-    limit: int = 5
+    limit: int = 5,
+    min_score: float = 0.55
 ) -> list[dict]:
     """
-    Search Qdrant for the most relevant
-    university-note chunks.
+    Search Qdrant for relevant university-note chunks.
+
+    Only return chunks whose similarity score is
+    greater than or equal to min_score.
     """
 
     if not query.strip():
@@ -127,16 +130,21 @@ def search_chunks(
 
     for result in results.points:
 
+        score = float(result.score)
+
+        # Reject weak/unrelated results
+        if score < min_score:
+            continue
+
         if result.payload and "text" in result.payload:
 
             matches.append({
-                "score": float(result.score),
+                "score": score,
                 "page": result.payload.get("page"),
                 "text": result.payload["text"]
             })
 
     return matches
-
 # ============================================================
 # CLOSE QDRANT CLEANLY
 # ============================================================

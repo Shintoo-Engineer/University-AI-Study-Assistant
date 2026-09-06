@@ -2,8 +2,11 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+# ============================================================
+# LOCAL LLM
+# ============================================================
 
+MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
 
 print("Loading local LLM...")
 
@@ -19,43 +22,68 @@ model.eval()
 print("Local LLM loaded successfully.")
 
 
-def generate_answer(question: str, context: str) -> str:
-    """
-    Generate a university-style answer using only retrieved notes.
-    """
+# ============================================================
+# GENERATE ANSWER
+# ============================================================
 
-    # Clearly separate retrieved sources
-    formatted_context = f"""
-SOURCE 1
---------
-{context}
-"""
+def generate_answer(
+    question: str,
+    context: str
+) -> str:
+    """
+    Generate an answer using only the retrieved
+    university study materials.
+
+    Page citations such as [Page 91] should be
+    included when supported by the context.
+    """
 
     messages = [
         {
             "role": "system",
             "content": (
-                "You are a university study assistant.\n"
-                "Answer the student's question using ONLY the provided sources.\n"
+                "You are a university study assistant.\n\n"
+
+                "Answer the student's question using ONLY "
+                "the provided university study materials.\n"
+
                 "Do not use outside knowledge.\n"
-                "Do not mention sources, retrieval, or the AI.\n\n"
+                "Do not invent information.\n"
+
+                "Use page citations in the format [Page X] "
+                "when the provided source contains a page number.\n"
+
+                "Only cite pages that are actually provided "
+                "in the source context.\n\n"
 
                 "Follow these rules:\n"
                 "1. Answer the exact question asked.\n"
                 "2. Start with a direct definition or answer.\n"
                 "3. Give only information relevant to the question.\n"
-                "4. If the question asks for types, components, features, "
-                "advantages, disadvantages, or steps, use a numbered list.\n"
+                "4. If the question asks for types, components, "
+                "features, advantages, disadvantages, or steps, "
+                "use a numbered list.\n"
                 "5. Keep the answer concise but complete.\n"
                 "6. Do not repeat information.\n"
-                "7. Do not invent information."
+                "7. Do not mention retrieval, Qdrant, the AI, "
+                "or the prompt.\n"
+                "8. Do not invent page numbers.\n"
+                "9. If the sources do not contain enough information, "
+                "say that the information is not available in the "
+                "provided study materials."
             ),
         },
         {
             "role": "user",
             "content": (
-                f"{formatted_context}\n\n"
-                f"QUESTION:\n{question}\n\n"
+                "SOURCE MATERIALS:\n"
+                "================\n"
+                f"{context}\n\n"
+
+                "QUESTION:\n"
+                "=========\n"
+                f"{question}\n\n"
+
                 "Give the final answer directly."
             ),
         },
@@ -75,7 +103,6 @@ SOURCE 1
     )
 
     with torch.no_grad():
-
         outputs = model.generate(
             **inputs,
             max_new_tokens=180,
