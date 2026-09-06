@@ -1,7 +1,15 @@
 import atexit
+import uuid
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    PointStruct,
+    Filter,
+    FieldCondition,
+    MatchValue,
+)
 
 from app.rag.embeddings import create_embedding
 
@@ -59,7 +67,10 @@ def create_collection():
 def add_chunks(chunks: list[dict]):
     """
     Convert text chunks into embeddings
-    and store them in Qdrant with page numbers.
+    and store them in Qdrant.
+
+    Each chunk gets a deterministic UUID based
+    on the document name and chunk index.
     """
 
     if not chunks:
@@ -74,21 +85,39 @@ def add_chunks(chunks: list[dict]):
             f"Embedding chunk {index + 1}/{len(chunks)}"
         )
 
+        # Create embedding
         vector = create_embedding(
             chunk["text"]
         )
 
+        # Get document name
+        document_name = chunk.get(
+            "document",
+            "unknown_document"
+        )
+
+        # Create deterministic unique ID
+        unique_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"{document_name}_{index}"
+            )
+        )
+
+        # Create Qdrant point
         point = PointStruct(
-            id=index,
+            id=unique_id,
             vector=vector,
             payload={
                 "text": chunk["text"],
-                "page": chunk["page"]
+                "page": chunk["page"],
+                "document": document_name
             }
         )
 
         points.append(point)
 
+    # Store points
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=points
@@ -98,6 +127,7 @@ def add_chunks(chunks: list[dict]):
         f"\nStored {len(points)} chunks in Qdrant."
     )
 
+
 # ============================================================
 # SEARCH CHUNKS
 # ============================================================
@@ -105,26 +135,64 @@ def add_chunks(chunks: list[dict]):
 def search_chunks(
     query: str,
     limit: int = 5,
-    min_score: float = 0.55
+    min_score: float = 0.55,
+    document: str | None = None
 ) -> list[dict]:
     """
     Search Qdrant for relevant university-note chunks.
 
-    Only return chunks whose similarity score is
-    greater than or equal to min_score.
+    If 'document' is provided, search only inside
+    that specific PDF.
+
+    Example:
+
+        search_chunks(
+            "What is Docker?",
+            document="CCS335-Cloud-Computing-Lecture-Notes-1.pdf"
+        )
     """
 
+    # Reject empty questions
     if not query.strip():
         return []
 
+    # Create embedding for the question
     query_vector = create_embedding(query)
+
+    # ========================================================
+    # OPTIONAL DOCUMENT FILTER
+    # ========================================================
+
+    query_filter = None
+
+    if document:
+
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="document",
+                    match=MatchValue(
+                        value=document
+                    )
+                )
+            ]
+        )
+
+    # ========================================================
+    # SEARCH QDRANT
+    # ========================================================
 
     results = client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
+        query_filter=query_filter,
         limit=limit,
         with_payload=True
     )
+
+    # ========================================================
+    # PROCESS RESULTS
+    # ========================================================
 
     matches = []
 
@@ -141,10 +209,13 @@ def search_chunks(
             matches.append({
                 "score": score,
                 "page": result.payload.get("page"),
-                "text": result.payload["text"]
+                "text": result.payload["text"],
+                "document": result.payload.get("document")
             })
 
     return matches
+
+
 # ============================================================
 # CLOSE QDRANT CLEANLY
 # ============================================================
@@ -160,5 +231,8 @@ def close_qdrant():
         pass
 
 
-# Register cleanup when Python exits
+# ============================================================
+# REGISTER CLEANUP
+# ============================================================
+
 atexit.register(close_qdrant)

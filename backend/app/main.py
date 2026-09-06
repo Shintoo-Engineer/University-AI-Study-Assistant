@@ -11,6 +11,10 @@ app = FastAPI(
 )
 
 
+# ============================================================
+# CORS
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3001"],
@@ -20,9 +24,18 @@ app.add_middleware(
 )
 
 
+# ============================================================
+# REQUEST MODEL
+# ============================================================
+
 class QuestionRequest(BaseModel):
     question: str
+    document: str | None = None
 
+
+# ============================================================
+# ROOT ENDPOINT
+# ============================================================
 
 @app.get("/")
 def root():
@@ -31,12 +44,21 @@ def root():
     }
 
 
+# ============================================================
+# ASK QUESTION
+# ============================================================
+
 @app.post("/ask")
 def ask(request: QuestionRequest):
-    result = ask_question(request.question)
+
+    result = ask_question(
+        request.question,
+        document=request.document
+    )
 
     return {
         "question": request.question,
+        "document": request.document,
         "answer": result["answer"],
         "sources": result["sources"]
     }
