@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Node.js
+node_modules/
+.next/
+out/
+
+# Build files
+dist/
+build/
+
+# Qdrant local database
+qdrant_data/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# University study materials
+data/documents/*.pdf
