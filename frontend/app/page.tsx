@@ -26,20 +26,32 @@ export default function Home() {
     setSources([]);
 
     try {
-      const response = await fetch("https://christina-silence-standings-deal.trycloudflare.com/ask", {
+      /*
+       * Browser talks to Next.js.
+       *
+       * Next.js /api/ask will communicate with
+       * the FastAPI backend through Cloudflare.
+       *
+       * This avoids browser-to-Cloudflare CORS problems.
+       */
+      const response = await fetch("/api/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          question: currentQuestion,
+          question: currentQuestion.trim(),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error("Failed to get answer");
+        throw new Error(
+          data?.error ||
+            data?.detail ||
+            "Failed to get answer"
+        );
       }
 
       setAnswer(
@@ -48,20 +60,16 @@ export default function Home() {
 
       setSources(data.sources || []);
     } catch (error) {
-      console.error(error);
+      console.error("RAG backend error:", error);
 
       setAnswer(
-        "Unable to connect to the RAG backend. Make sure the FastAPI server is running."
+        "Unable to connect to the RAG backend. Make sure the FastAPI server and Cloudflare Tunnel are running."
       );
+
+      setSources([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const clearChat = () => {
-    setQuestion("");
-    setAnswer("");
-    setSources([]);
   };
 
   return (
@@ -74,8 +82,6 @@ export default function Home() {
       <header className="relative z-20 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
 
         <div className="mx-auto flex h-[84px] max-w-[1600px] items-center justify-between px-6 lg:px-12">
-
-          {/* Logo */}
 
           <div className="flex items-center gap-4">
 
@@ -90,15 +96,23 @@ export default function Home() {
             <div>
 
               <h1 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+
                 University{" "}
+
                 <span className="bg-gradient-to-r from-blue-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
+
                   AI
+
                 </span>{" "}
+
                 Study Assistant
+
               </h1>
 
               <p className="text-sm text-slate-500">
+
                 Your intelligent university study companion
+
               </p>
 
             </div>
@@ -111,23 +125,35 @@ export default function Home() {
           <nav className="hidden items-center gap-2 lg:flex">
 
             <button className="flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200">
+
               <span>⌂</span>
+
               Home
+
             </button>
 
             <button className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
+
               <span>▣</span>
+
               Library
+
             </button>
 
             <button className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
+
               <span>◷</span>
+
               Chat History
+
             </button>
 
             <button className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
+
               <span>📖</span>
+
               Resources
+
             </button>
 
           </nav>
@@ -179,11 +205,13 @@ export default function Home() {
           <div className="mb-5 rotate-[-5deg] text-center">
 
             <p className="text-lg font-bold leading-6 text-slate-800">
+
               All your
               <br />
               study materials
               <br />
               in one place
+
             </p>
 
             <div className="mt-3 text-3xl text-violet-500">
@@ -198,19 +226,27 @@ export default function Home() {
           <div className="space-y-[-8px]">
 
             <div className="flex h-16 w-64 rotate-[-5deg] items-center justify-center rounded-2xl border-4 border-blue-400 bg-gradient-to-r from-blue-400 to-blue-600 text-xl font-bold text-white shadow-xl">
+
               📘 Notes
+
             </div>
 
             <div className="flex h-16 w-64 rotate-[-4deg] items-center justify-center rounded-2xl border-4 border-violet-400 bg-gradient-to-r from-violet-500 to-purple-600 text-xl font-bold text-white shadow-xl">
+
               📕 Syllabus
+
             </div>
 
             <div className="flex h-16 w-64 rotate-[-3deg] items-center justify-center rounded-2xl border-4 border-pink-400 bg-gradient-to-r from-pink-500 to-rose-500 text-xl font-bold text-white shadow-xl">
+
               📗 Textbooks
+
             </div>
 
             <div className="flex h-16 w-64 rotate-[-2deg] items-center justify-center rounded-2xl border-4 border-orange-300 bg-gradient-to-r from-orange-400 to-amber-500 text-xl font-bold text-white shadow-xl">
+
               📙 Previous Papers
+
             </div>
 
           </div>
@@ -225,7 +261,9 @@ export default function Home() {
               </div>
 
               <span className="rounded bg-red-500 px-2 py-1 text-xs font-bold text-white">
+
                 PDF
+
               </span>
 
             </div>
@@ -271,13 +309,17 @@ export default function Home() {
             <div className="absolute right-[-30px] top-0 flex items-center gap-3 rounded-full border border-white bg-white/90 px-5 py-4 shadow-xl backdrop-blur">
 
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-emerald-400 text-2xl">
+
                 🔍
+
               </div>
 
               <div className="text-sm font-bold text-blue-700">
+
                 Search across
                 <br />
                 all your PDFs
+
               </div>
 
             </div>
@@ -292,9 +334,11 @@ export default function Home() {
               </div>
 
               <div className="text-sm font-bold text-blue-700">
+
                 Get clear
                 <br />
                 AI answers
+
               </div>
 
             </div>
@@ -309,9 +353,11 @@ export default function Home() {
               </div>
 
               <div className="text-sm font-bold text-orange-600">
+
                 Study
                 <br />
                 smarter
+
               </div>
 
             </div>
@@ -336,8 +382,11 @@ export default function Home() {
               <span>✦</span>
 
               Powered by{" "}
+
               <span className="bg-gradient-to-r from-violet-600 to-pink-500 bg-clip-text text-transparent">
+
                 Retrieval-Augmented Generation
+
               </span>
 
             </div>
@@ -380,29 +429,30 @@ export default function Home() {
 
             <div className="relative">
 
-              {/* Glow */}
-
               <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-r from-blue-400/30 via-violet-400/40 to-pink-400/30 blur-md" />
 
-
               <div className="relative rounded-[28px] border border-white bg-white/90 p-5 shadow-2xl shadow-blue-200/50 backdrop-blur-xl sm:p-7">
-
-                {/* Header */}
 
                 <div className="mb-4 flex items-center gap-4">
 
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-violet-600 to-pink-500 text-xl text-white shadow-lg shadow-violet-200">
+
                     ✨
+
                   </div>
 
                   <div>
 
                     <h3 className="text-base font-bold text-slate-900">
+
                       Ask your question
+
                     </h3>
 
                     <p className="text-sm text-slate-500">
+
                       Search across all your university materials...
+
                     </p>
 
                   </div>
@@ -498,7 +548,9 @@ export default function Home() {
                 </span>
 
                 <h3 className="text-base font-bold text-slate-900">
+
                   Try asking
+
                 </h3>
 
               </div>
@@ -506,34 +558,39 @@ export default function Home() {
 
               <div className="grid gap-4 md:grid-cols-3">
 
-
                 {/* Docker */}
 
                 <button
-                  onClick={() =>
-                    askQuestion("What is Docker?")
-                  }
+                  onClick={() => askQuestion("What is Docker?")}
                   className="group flex items-center gap-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-sky-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-100"
                 >
 
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 text-2xl text-white shadow-lg">
+
                     🐳
+
                   </div>
 
                   <div className="min-w-0 flex-1">
 
                     <h4 className="font-bold text-slate-900">
+
                       What is Docker?
+
                     </h4>
 
                     <p className="mt-1 text-xs text-slate-500">
+
                       Learn the fundamentals of Docker and containers.
+
                     </p>
 
                   </div>
 
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-xl text-blue-500 shadow-sm transition group-hover:translate-x-1">
+
                     →
+
                   </div>
 
                 </button>
@@ -549,23 +606,31 @@ export default function Home() {
                 >
 
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-2xl text-white shadow-lg">
+
                     ⚙️
+
                   </div>
 
                   <div className="min-w-0 flex-1">
 
                     <h4 className="font-bold text-slate-900">
+
                       Docker Components
+
                     </h4>
 
                     <p className="mt-1 text-xs text-slate-500">
+
                       Understand Docker architecture and its components.
+
                     </p>
 
                   </div>
 
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-xl text-violet-600 shadow-sm transition group-hover:translate-x-1">
+
                     →
+
                   </div>
 
                 </button>
@@ -583,23 +648,31 @@ export default function Home() {
                 >
 
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-2xl text-white shadow-lg">
+
                     ☁️
+
                   </div>
 
                   <div className="min-w-0 flex-1">
 
                     <h4 className="font-bold text-slate-900">
+
                       Cloud Deployment Models
+
                     </h4>
 
                     <p className="mt-1 text-xs text-slate-500">
+
                       Explore the different cloud deployment models.
+
                     </p>
 
                   </div>
 
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-xl text-emerald-500 shadow-sm transition group-hover:translate-x-1">
+
                     →
+
                   </div>
 
                 </button>
@@ -632,11 +705,15 @@ export default function Home() {
             </div>
 
             <h3 className="font-bold text-slate-900">
+
               Searching your study materials...
+
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">
+
               Retrieving relevant notes and generating an answer
+
             </p>
 
           </div>
@@ -656,7 +733,6 @@ export default function Home() {
 
           <div className="mx-auto max-w-5xl">
 
-
             {/* Answer */}
 
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
@@ -668,17 +744,23 @@ export default function Home() {
                   <div className="flex items-center gap-4">
 
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 text-xl text-white shadow-lg">
+
                       🤖
+
                     </div>
 
                     <div>
 
                       <h2 className="font-bold text-slate-900">
+
                         AI Answer
+
                       </h2>
 
                       <p className="text-xs text-slate-500">
+
                         Generated from your university materials
+
                       </p>
 
                     </div>
@@ -700,7 +782,9 @@ export default function Home() {
               <div className="px-6 py-7">
 
                 <div className="whitespace-pre-line text-[15px] leading-8 text-slate-700 sm:text-base">
+
                   {answer}
+
                 </div>
 
               </div>
@@ -723,7 +807,9 @@ export default function Home() {
                     <h2 className="flex items-center gap-3 text-xl font-bold text-slate-900">
 
                       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+
                         📖
+
                       </span>
 
                       Retrieved Sources
@@ -731,7 +817,9 @@ export default function Home() {
                     </h2>
 
                     <p className="mt-2 text-sm text-slate-500">
+
                       Relevant sections retrieved from your study materials
+
                     </p>
 
                   </div>
@@ -760,19 +848,25 @@ export default function Home() {
                         <div className="flex items-center gap-3">
 
                           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 text-sm font-bold text-white">
+
                             {index + 1}
+
                           </div>
 
                           <div>
 
                             <h3 className="font-bold text-slate-900">
+
                               Source {index + 1}
+
                             </h3>
 
                             {source.document && (
 
                               <p className="max-w-[400px] truncate text-xs text-slate-400">
+
                                 {source.document}
+
                               </p>
 
                             )}
@@ -785,13 +879,17 @@ export default function Home() {
                         <div className="flex items-center gap-2">
 
                           <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600">
+
                             Similarity {source.score.toFixed(4)}
+
                           </span>
 
                           {source.page && (
 
                             <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+
                               Page {source.page}
+
                             </span>
 
                           )}
@@ -802,7 +900,9 @@ export default function Home() {
 
 
                       <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+
                         {source.text}
+
                       </p>
 
                     </div>
@@ -833,17 +933,23 @@ export default function Home() {
           <div className="flex items-center gap-3">
 
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600">
+
               🎓
+
             </div>
 
             <div>
 
               <p className="text-sm font-bold">
+
                 University AI Study Assistant
+
               </p>
 
               <p className="text-xs text-slate-400">
+
                 Your intelligent university study companion
+
               </p>
 
             </div>
@@ -854,19 +960,25 @@ export default function Home() {
           <div className="flex items-center gap-3 text-xs text-slate-400">
 
             <span className="cursor-pointer hover:text-white">
+
               Privacy
+
             </span>
 
             <span>|</span>
 
             <span className="cursor-pointer hover:text-white">
+
               Terms
+
             </span>
 
             <span>|</span>
 
             <span className="cursor-pointer hover:text-white">
+
               Help
+
             </span>
 
           </div>
